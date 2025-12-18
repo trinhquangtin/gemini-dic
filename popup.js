@@ -5,7 +5,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const loadingDiv = document.getElementById('loading');
 
     // ★ここにあなたのGemini APIキーを貼り付けてください★
-    const GEMINI_API_KEY = 'AIzaSyAsaCKHeU_F_PWxt4blZ2IAv8Ii5IoVPws'; // 例: 'AIzaSyC...'
+    const GEMINI_API_KEY = 'AIzaSyAsaCKHeU_F_PWxt4blZ2IAv8Ii5IoVPws'; // tin.trinh@playnext-lab.co.jp
+    
+    // Rate limiting
+    let lastRequestTime = 0;
+    const MIN_REQUEST_INTERVAL = 2000; // 2秒間隔
 
     async function explainWord() {
         const word = wordInput.value.trim();
@@ -13,6 +17,17 @@ document.addEventListener('DOMContentLoaded', function() {
             explanationDiv.textContent = '単語を入力してください。';
             return;
         }
+
+        // Rate limiting check
+        const now = Date.now();
+        const timeSinceLastRequest = now - lastRequestTime;
+        if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
+            const waitTime = MIN_REQUEST_INTERVAL - timeSinceLastRequest;
+            explanationDiv.textContent = `リクエスト制限のため${Math.ceil(waitTime/1000)}秒お待ちください...`;
+            setTimeout(() => explainWord(), waitTime);
+            return;
+        }
+        lastRequestTime = now;
 
         explanationDiv.innerHTML = ''; // 前回の結果をクリア
         loadingDiv.style.display = 'block'; // ローディング表示
@@ -22,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const prompt = `「${word}」とは`;
 
             // Gemini APIへのリクエストを送信
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -39,8 +54,13 @@ document.addEventListener('DOMContentLoaded', function() {
             // レスポンスのチェック
             if (!response.ok) {
                 const errorData = await response.json();
-                // エラーの詳細をコンソールに出力し、ユーザーには一般的なメッセージを表示
                 console.error(`API Error: ${response.status} ${response.statusText}`, errorData);
+                
+                // Handle specific quota/limit errors
+                if (response.status === 429 || (errorData.error && errorData.error.message && errorData.error.message.includes('quota'))) {
+                    throw new Error('API使用量の上限に達しました。しばらく時間をおいてから再度お試しください。');
+                }
+                
                 throw new Error(`API呼び出しに失敗しました。詳細: ${errorData.error ? errorData.error.message : response.statusText}`);
             }
 
@@ -70,10 +90,28 @@ document.addEventListener('DOMContentLoaded', function() {
             .replace(/\n/g, '<br>');
     }
 
+    // Add quota check function
+    async function checkQuota() {
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`);
+            if (response.ok) {
+                explanationDiv.innerHTML = '<strong>API接続OK:</strong> クォータに問題はありません。';
+            } else {
+                const errorData = await response.json();
+                explanationDiv.innerHTML = `<strong>API状態:</strong> ${errorData.error?.message || 'エラーが発生しました'}`;
+            }
+        } catch (error) {
+            explanationDiv.innerHTML = `<strong>接続エラー:</strong> ${error.message}`;
+        }
+    }
+
     explainButton.addEventListener('click', explainWord);
     wordInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             explainWord();
         }
     });
+    
+    // Add double-click to check quota
+    explainButton.addEventListener('dblclick', checkQuota);
 });
