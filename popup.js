@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const loadingDiv = document.getElementById('loading');
 
     // ★ここにあなたのGemini APIキーを貼り付けてください★
-    const GEMINI_API_KEY = 'your-key'; // tin.trinh@playnext-lab.co.jp
+    const GEMINI_API_KEY = 'your-key'; 
     
     // Rate limiting
     let lastRequestTime = 0;
