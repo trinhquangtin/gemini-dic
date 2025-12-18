@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const loadingDiv = document.getElementById('loading');
 
     // ★ここにあなたのGemini APIキーを貼り付けてください★
-    const GEMINI_API_KEY = 'AIzaSyBkN7hoUswER5HvQO8E7s7gNPls6r4s-iM'; // 例: 'AIzaSyC...'
+    const GEMINI_API_KEY = 'AIzaSyAsaCKHeU_F_PWxt4blZ2IAv8Ii5IoVPws'; // 例: 'AIzaSyC...'
 
     async function explainWord() {
         const word = wordInput.value.trim();
